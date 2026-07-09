@@ -58,16 +58,25 @@ export function TicketSelectionScreen() {
         {/* Ticket types */}
         <div className="flex flex-col gap-3 mb-6">
           {ticketTypes.map(t => {
-            const available = t.capacity - t.sold;
+            const available = Math.max(0, t.capacity - (t.sold || 0));
+            const isSoldOut = available <= 0;
             const isSelected = t.id === selectedId;
             return (
               <button
                 key={t.id}
-                onClick={() => setSelectedId(t.id)}
+                onClick={() => {
+                  if (!isSoldOut) {
+                    setSelectedId(t.id);
+                    setQuantity(1); // Reset quantity when changing ticket type
+                  }
+                }}
+                disabled={isSoldOut}
                 className={`w-full rounded-2xl p-4 border-2 text-left transition-all ${
-                  isSelected
-                    ? 'bg-violet-600/10 border-violet-500'
-                    : 'bg-[#13132A] border-transparent'
+                  isSoldOut
+                    ? 'bg-gray-900/50 border-transparent opacity-50 cursor-not-allowed'
+                    : isSelected
+                      ? 'bg-violet-600/10 border-violet-500'
+                      : 'bg-[#13132A] border-transparent'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -94,14 +103,18 @@ export function TicketSelectionScreen() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center"
+                className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center active:bg-white/20"
               >
                 <Minus size={14} className="text-white" />
               </button>
               <span className="text-white font-bold text-lg w-6 text-center">{quantity}</span>
               <button
-                onClick={() => setQuantity(q => Math.min(10, q + 1))}
-                className="w-8 h-8 bg-violet-600 rounded-full flex items-center justify-center"
+                onClick={() => {
+                  const maxAvailable = selected ? Math.max(0, selected.capacity - (selected.sold || 0)) : 10;
+                  setQuantity(q => Math.min(Math.min(10, maxAvailable), q + 1));
+                }}
+                disabled={!selected || quantity >= (selected.capacity - (selected.sold || 0)) || quantity >= 10}
+                className="w-8 h-8 bg-violet-600 rounded-full flex items-center justify-center disabled:opacity-50 disabled:bg-gray-600 active:bg-violet-500"
               >
                 <Plus size={14} className="text-white" />
               </button>

@@ -167,19 +167,34 @@ export function EventDetailScreen() {
           <div className="text-right">
             <p className="text-gray-500 text-xs">Billets disponibles</p>
             <p className="text-white text-sm font-semibold">
-              {ticketTypes.reduce((a, t) => a + (t.capacity - t.sold), 0)}
+              {ticketTypes.reduce((a, t) => a + Math.max(0, t.capacity - (t.sold || 0)), 0)}
             </p>
           </div>
         </div>
-        <button
-          onClick={() => {
-            if (!user) navigate('login');
-            else navigate('ticket-selection', { eventId: event.id });
-          }}
-          className="w-full py-4 bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold rounded-2xl text-base active:opacity-90 transition-opacity"
-        >
-          Acheter un billet
-        </button>
+        
+        {(() => {
+          const totalAvailable = ticketTypes.reduce((a, t) => a + Math.max(0, t.capacity - (t.sold || 0)), 0);
+          const isSoldOut = totalAvailable <= 0;
+          
+          return (
+            <button
+              onClick={() => {
+                if (!isSoldOut) {
+                  if (!user) navigate('login');
+                  else navigate('ticket-selection', { eventId: event.id });
+                }
+              }}
+              disabled={isSoldOut}
+              className={`w-full py-4 font-bold rounded-2xl text-base transition-all ${
+                isSoldOut 
+                  ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-violet-600 to-violet-500 text-white active:opacity-90'
+              }`}
+            >
+              {isSoldOut ? 'Épuisé (Sold Out)' : 'Acheter un billet'}
+            </button>
+          );
+        })()}
       </div>
     </div>
   );
