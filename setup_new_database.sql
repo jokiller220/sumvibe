@@ -199,22 +199,24 @@ WITH CHECK (
 );
 
 -- 3. Add Developer Policies for sv_user_profiles
+-- We use a SECURITY DEFINER function to bypass RLS and avoid infinite recursion
+CREATE OR REPLACE FUNCTION public.is_developer()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.sv_user_profiles 
+    WHERE id = auth.uid() 
+    AND is_developer = true
+  );
+$$;
+
 CREATE POLICY "sv_all_profiles_developer" ON sv_user_profiles 
 FOR ALL TO authenticated 
-USING (
-  EXISTS (
-    SELECT 1 FROM sv_user_profiles AS p 
-    WHERE p.id = auth.uid() 
-    AND p.is_developer = true
-  )
-) 
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM sv_user_profiles AS p 
-    WHERE p.id = auth.uid() 
-    AND p.is_developer = true
-  )
-);
+USING ( public.is_developer() ) 
+WITH CHECK ( public.is_developer() );
 
 -- 4. Add Developer Policies for sv_organizers
 CREATE POLICY "sv_all_organizers_developer" ON sv_organizers 

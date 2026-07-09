@@ -116,41 +116,7 @@ export function ProfileScreen() {
           </div>
         </div>
 
-        {/* Organizer */}
-        {organizer ? (
-          <div className="px-5 mb-4">
-            <div className="bg-[#13132A] rounded-2xl overflow-hidden">
-              <button
-                onClick={() => navigate('organizer-dashboard')}
-                className="w-full flex items-center justify-between px-4 py-3.5"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-amber-600/20 rounded-xl flex items-center justify-center">
-                    <Building2 size={16} className="text-amber-400" />
-                  </div>
-                  <span className="text-white text-sm font-medium">Espace Organisateur</span>
-                </div>
-                <ChevronRight size={16} className="text-gray-600" />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="px-5 mb-4">
-            <button
-              onClick={() => navigate('organizer-landing')}
-              className="w-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-2xl p-4 flex items-center gap-3"
-            >
-              <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
-                <Building2 size={20} className="text-amber-400" />
-              </div>
-              <div className="text-left">
-                <p className="text-white font-semibold text-sm">Devenir organisateur</p>
-                <p className="text-gray-400 text-xs">Créez et gérez vos événements</p>
-              </div>
-              <ChevronRight size={16} className="text-gray-500 ml-auto" />
-            </button>
-          </div>
-        )}
+
 
         {/* Settings */}
         <div className="px-5 mb-4">
