@@ -1,4 +1,5 @@
 import { CheckCircle, Download, Share2 } from 'lucide-react';
+import QRCodeSVG from 'react-qr-code';
 import { useApp } from '../context/AppContext';
 import { StatusBar } from '../components/StatusBar';
 import { formatPrice } from '../lib/utils';
@@ -32,7 +33,7 @@ export function PaymentSuccessScreen() {
           <div className="w-full bg-[#13132A] rounded-3xl overflow-hidden mb-6 mt-4">
             {/* QR placeholder */}
             <div className="bg-white m-4 rounded-2xl p-4 flex items-center justify-center">
-              <QRCodePlaceholder value={latestPurchase.qr_code} />
+              <QRCodeSVG value={latestPurchase.qr_code} size={160} bgColor="#ffffff" fgColor="#1a0030" />
             </div>
 
             <div className="px-5 pb-5 text-center">

@@ -1,44 +1,8 @@
 import { ChevronLeft, Share2, Calendar, MapPin, Clock, Wallet } from 'lucide-react';
+import QRCodeSVG from 'react-qr-code';
 import { useApp } from '../context/AppContext';
 import { StatusBar } from '../components/StatusBar';
 import { formatDate, formatTime, formatPrice } from '../lib/utils';
-
-function QRCode({ value }: { value: string }) {
-  const size = 200;
-  const cells = 25;
-  const cellSize = size / cells;
-
-  const pattern = Array.from({ length: cells }, (_, r) =>
-    Array.from({ length: cells }, (_, c) => {
-      if ((r < 7 && c < 7) || (r < 7 && c >= cells - 7) || (r >= cells - 7 && c < 7)) {
-        const inner =
-          (r >= 2 && r <= 4 && c >= 2 && c <= 4) ||
-          (r >= 2 && r <= 4 && c >= cells - 5 && c <= cells - 3) ||
-          (r >= cells - 5 && r <= cells - 3 && c >= 2 && c <= 4);
-        const border =
-          r === 0 || r === 6 || c === 0 || c === 6 ||
-          (r === 0 || r === 6) ||
-          (c === cells - 7 || c === cells - 1) ||
-          (r === cells - 7 || r === cells - 1 || c === 0 || c === 6);
-        return inner || border;
-      }
-      const hash = (value.charCodeAt(r % value.length) * 31 + value.charCodeAt(c % value.length) + r * 7 + c * 3) % 4;
-      return hash === 0;
-    })
-  );
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      {pattern.map((row, r) =>
-        row.map((filled, c) =>
-          filled ? (
-            <rect key={`${r}-${c}`} x={c * cellSize} y={r * cellSize} width={cellSize} height={cellSize} fill="#1a0030" />
-          ) : null
-        )
-      )}
-    </svg>
-  );
-}
 
 export function TicketDetailScreen() {
   const { myPurchases, params, goBack, navigate } = useApp();
@@ -87,7 +51,7 @@ export function TicketDetailScreen() {
           {/* QR Code */}
           <div className="flex flex-col items-center py-6 px-4">
             <div className="bg-white rounded-2xl p-4 mb-4">
-              <QRCode value={purchase.qr_code} />
+              <QRCodeSVG value={purchase.qr_code} size={200} bgColor="#ffffff" fgColor="#1a0030" />
             </div>
             <p className="text-gray-500 text-xs font-mono tracking-wider">{purchase.qr_code.slice(0, 20).toUpperCase()}</p>
           </div>
