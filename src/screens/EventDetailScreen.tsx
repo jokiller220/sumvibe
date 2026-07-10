@@ -47,7 +47,7 @@ export function EventDetailScreen() {
       <div className="flex-1 overflow-y-auto pb-28 relative">
         {/* Hero image */}
         <div className="relative h-72 flex-shrink-0">
-          <img src={event.image_url || ''} alt={event.title} className="w-full h-full object-cover" />
+          <img src={event.image_url || ''} alt={event.title} className="w-full h-full object-cover pointer-events-none select-none" draggable={false} />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#06060F]" />
           <div className="absolute bottom-4 left-5 right-5">
             <div className="bg-violet-600/20 backdrop-blur-sm border border-violet-500/30 rounded-full px-3 py-0.5 inline-block mb-2">
