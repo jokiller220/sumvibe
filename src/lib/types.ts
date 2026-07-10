@@ -9,6 +9,7 @@ export type Screen =
   | 'payment'
   | 'payment-success'
   | 'my-tickets'
+  | 'my-payments'
   | 'ticket-detail'
   | 'search'
   | 'categories'

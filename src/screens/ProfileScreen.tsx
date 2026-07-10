@@ -37,7 +37,7 @@ export function ProfileScreen() {
     { icon: Ticket, label: 'Mes tickets', count: myPurchases.length, screen: 'my-tickets' as const },
     { icon: Heart, label: 'Favoris', count: favoriteIds.size, screen: 'favorites' as const },
     { icon: Bell, label: 'Notifications', screen: 'notifications' as const },
-    { icon: CreditCard, label: 'Mes paiements', screen: 'my-tickets' as const },
+    { icon: CreditCard, label: 'Mes paiements', screen: 'my-payments' as const },
   ];
 
   const settingsItems = [

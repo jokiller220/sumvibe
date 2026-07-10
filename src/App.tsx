@@ -9,6 +9,7 @@ import { TicketSelectionScreen } from './screens/TicketSelectionScreen';
 import { PaymentScreen } from './screens/PaymentScreen';
 import { PaymentSuccessScreen } from './screens/PaymentSuccessScreen';
 import { MyTicketsScreen } from './screens/MyTicketsScreen';
+import { MyPaymentsScreen } from './screens/MyPaymentsScreen';
 import { TicketDetailScreen } from './screens/TicketDetailScreen';
 import { SearchScreen } from './screens/SearchScreen';
 import { CategoriesScreen } from './screens/CategoriesScreen';
@@ -41,6 +42,7 @@ function AppContent() {
       case 'payment': return <PaymentScreen />;
       case 'payment-success': return <PaymentSuccessScreen />;
       case 'my-tickets': return <MyTicketsScreen />;
+      case 'my-payments': return <MyPaymentsScreen />;
       case 'ticket-detail': return <TicketDetailScreen />;
       case 'search': return <SearchScreen />;
       case 'categories': return <CategoriesScreen />;

@@ -51,13 +51,14 @@ export function HelpScreen() {
         <h3 className="text-white font-bold mb-3">Nous contacter</h3>
         <div className="flex flex-col gap-2">
           {[
-            { icon: MessageCircle, label: 'Chat en direct', sub: 'Disponible 24h/7j', color: 'text-violet-400 bg-violet-600/20' },
-            { icon: Phone, label: 'Appeler le support', sub: '+228 90 000 000', color: 'text-green-400 bg-green-600/20' },
-            { icon: Mail, label: 'Envoyer un email', sub: 'support@sumvibe.tg', color: 'text-amber-400 bg-amber-600/20' },
+            { icon: MessageCircle, label: 'Chat en direct', sub: 'Disponible 24h/7j', color: 'text-violet-400 bg-violet-600/20', action: () => window.open('https://wa.me/22890000000', '_blank') },
+            { icon: Phone, label: 'Appeler le support', sub: '+228 90 000 000', color: 'text-green-400 bg-green-600/20', action: () => window.open('tel:+22890000000', '_self') },
+            { icon: Mail, label: 'Envoyer un email', sub: 'support@sumvibe.tg', color: 'text-amber-400 bg-amber-600/20', action: () => window.open('mailto:support@sumvibe.tg', '_self') },
           ].map(item => (
             <button
               key={item.label}
-              className="bg-[#13132A] rounded-2xl p-4 flex items-center gap-4"
+              onClick={item.action}
+              className="bg-[#13132A] rounded-2xl p-4 flex items-center gap-4 active:bg-white/5 transition-colors"
             >
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.color}`}>
                 <item.icon size={18} />
