@@ -11,6 +11,7 @@ export type Screen =
   | 'my-tickets'
   | 'my-payments'
   | 'ticket-detail'
+  | 'personal-info'
   | 'search'
   | 'categories'
   | 'favorites'
