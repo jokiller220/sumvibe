@@ -103,7 +103,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .select('*, sv_organizers(*), sv_ticket_types(*)')
       .eq('is_published', true)
       .order('date', { ascending: true });
-    if (data) setEvents(data);
+      
+    if (data) {
+      // Filter out past events (keep today's events active)
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Start of today
+      
+      const futureEvents = data.filter(e => new Date(e.date) >= now);
+      setEvents(futureEvents);
+    }
   };
 
   const loadMyPurchases = async () => {
