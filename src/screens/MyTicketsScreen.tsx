@@ -153,11 +153,12 @@ function TicketCard({ purchase, onPress, onLongPress, isPast }: { purchase: Purc
     <button
       {...bind()}
       onClick={onPress}
-      className={`w-full bg-[#13132A] rounded-2xl overflow-hidden active:opacity-80 transition-all select-none ${isPast ? 'opacity-80' : ''}`}
+      style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
+      className={`w-full text-left bg-[#13132A] rounded-2xl overflow-hidden active:opacity-80 transition-all select-none ${isPast ? 'opacity-80' : ''}`}
     >
       {/* Image header */}
-      <div className="relative h-28">
-        <img src={event.image_url || ''} alt={event.title} className="w-full h-full object-cover" />
+      <div className="relative h-28 pointer-events-none">
+        <img src={event.image_url || ''} alt={event.title} className="w-full h-full object-cover pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-end p-4 pointer-events-none">
           <div>
             <h3 className="text-white font-bold text-sm">{event.title}</h3>
