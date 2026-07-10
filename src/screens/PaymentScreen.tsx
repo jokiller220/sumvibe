@@ -30,7 +30,7 @@ const PAYMENT_METHODS = [
 ];
 
 export function PaymentScreen() {
-  const { cart, user, navigate, goBack, loadMyPurchases } = useApp();
+  const { cart, user, navigate, goBack, loadMyPurchases, loadEvents } = useApp();
   const [method, setMethod] = useState('Flooz');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -58,12 +58,13 @@ export function PaymentScreen() {
       setLoading(false);
       return;
     }
-    // Update sold count
-    supabase.rpc('increment_ticket_sold', {
-      p_ticket_type_id: cart.ticketTypeId,
-      p_quantity: cart.quantity
-    }).then(() => {});
+    // Update sold count manually
+    const { data: tt } = await supabase.from('sv_ticket_types').select('sold').eq('id', cart.ticketTypeId).single();
+    if (tt) {
+       await supabase.from('sv_ticket_types').update({ sold: (tt.sold || 0) + cart.quantity }).eq('id', cart.ticketTypeId);
+    }
     await loadMyPurchases();
+    await loadEvents();
     setLoading(false);
     navigate('payment-success');
   };

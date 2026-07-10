@@ -43,20 +43,20 @@ export function EventDetailScreen() {
         </div>
       </div>
 
-      {/* Hero image */}
-      <div className="relative h-72 flex-shrink-0">
-        <img src={event.image_url || ''} alt={event.title} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#06060F]" />
-        <div className="absolute bottom-4 left-5 right-5">
-          <div className="bg-violet-600/20 backdrop-blur-sm border border-violet-500/30 rounded-full px-3 py-0.5 inline-block mb-2">
-            <span className="text-violet-300 text-xs font-medium">{event.category}</span>
-          </div>
-          <h1 className="text-white text-2xl font-black leading-tight">{event.title}</h1>
-        </div>
-      </div>
-
       {/* Content */}
-      <div className="flex-1 overflow-y-auto pb-28">
+      <div className="flex-1 overflow-y-auto pb-28 relative">
+        {/* Hero image */}
+        <div className="relative h-72 flex-shrink-0">
+          <img src={event.image_url || ''} alt={event.title} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#06060F]" />
+          <div className="absolute bottom-4 left-5 right-5">
+            <div className="bg-violet-600/20 backdrop-blur-sm border border-violet-500/30 rounded-full px-3 py-0.5 inline-block mb-2">
+              <span className="text-violet-300 text-xs font-medium">{event.category}</span>
+            </div>
+            <h1 className="text-white text-2xl font-black leading-tight">{event.title}</h1>
+          </div>
+        </div>
+
         <div className="px-5 pt-4">
           {/* Info grid */}
           <div className="grid grid-cols-2 gap-3 mb-5">
