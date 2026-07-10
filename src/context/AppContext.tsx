@@ -28,6 +28,7 @@ interface AppContextType {
   loadEvents: () => Promise<void>;
   loadMyPurchases: () => Promise<void>;
   loadFavorites: () => Promise<void>;
+  loadProfile: (userId?: string) => Promise<void>;
   toggleFavorite: (eventId: string) => Promise<void>;
   loadOrganizer: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -87,12 +88,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  const loadProfile = async () => {
-    if (!user) return;
+  const loadProfile = async (userId?: string) => {
+    const id = userId || user?.id;
+    if (!id) return;
     const { data } = await supabase
       .from('sv_user_profiles')
       .select('*')
-      .eq('id', user.id)
+      .eq('id', id)
       .single();
     if (data) setProfile(data);
   };
@@ -165,7 +167,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         screen, navigate, goBack, params,
         user, profile, events, myPurchases,
         favoriteIds, organizer, cart, setCart,
-        loadEvents, loadMyPurchases, loadFavorites,
+        loadEvents, loadMyPurchases, loadFavorites, loadProfile,
         toggleFavorite, loadOrganizer, signOut,
       }}
     >
