@@ -41,7 +41,7 @@ export function ProfileScreen() {
   ];
 
   const settingsItems = [
-    { icon: UserIcon, label: 'Informations personnelles', screen: 'settings' as const },
+    { icon: UserIcon, label: 'Informations personnelles', screen: 'personal-info' as const },
     { icon: Settings, label: 'Paramètres', screen: 'settings' as const },
     { icon: HelpCircle, label: 'Aide et support', screen: 'help' as const },
   ];
