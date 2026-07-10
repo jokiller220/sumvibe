@@ -5,11 +5,12 @@ import { BottomNav } from '../components/BottomNav';
 import { StatusBar } from '../components/StatusBar';
 import { Event } from '../lib/types';
 import { formatShortDate, formatTime, formatPrice } from '../lib/utils';
+import { PullToRefresh } from '../components/PullToRefresh';
 
 const CATEGORIES = ['Tous', 'Concerts', 'Soirées', 'Festivals', 'Plage', 'Sport'];
 
 export function HomeScreen() {
-  const { events, favoriteIds, toggleFavorite, navigate, user, profile } = useApp();
+  const { events, favoriteIds, toggleFavorite, navigate, user, profile, loadEvents } = useApp();
   const [activeCategory, setActiveCategory] = useState('Tous');
 
   const firstName = profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'toi';
@@ -63,8 +64,9 @@ export function HomeScreen() {
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto pb-24">
-        {/* Categories */}
+      <PullToRefresh onRefresh={loadEvents}>
+        <div className="pb-24">
+          {/* Categories */}
         <div className="px-5 mb-5">
           <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
             {CATEGORIES.map(cat => (
@@ -126,7 +128,8 @@ export function HomeScreen() {
             ))}
           </div>
         </section>
-      </div>
+        </div>
+      </PullToRefresh>
 
       <BottomNav />
     </div>
