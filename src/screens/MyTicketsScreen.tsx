@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Calendar, MapPin, QrCode } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, MapPin, QrCode, Trash2 } from 'lucide-react';
+import { useLongPress } from 'use-long-press';
 import { useApp } from '../context/AppContext';
 import { BottomNav } from '../components/BottomNav';
 import { StatusBar } from '../components/StatusBar';
@@ -9,6 +10,16 @@ import { formatShortDate, formatTime, formatPrice } from '../lib/utils';
 export function MyTicketsScreen() {
   const { myPurchases, navigate, user } = useApp();
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [hiddenTicketIds, setHiddenTicketIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('sv_hidden_tickets') || '[]');
+    } catch { return []; }
+  });
+  const [ticketToDelete, setTicketToDelete] = useState<Purchase | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('sv_hidden_tickets', JSON.stringify(hiddenTicketIds));
+  }, [hiddenTicketIds]);
 
   if (!user) {
     return (
@@ -34,8 +45,15 @@ export function MyTicketsScreen() {
 
   const now = new Date();
   const upcoming = myPurchases.filter(p => p.sv_events && new Date(p.sv_events.date) > now);
-  const past = myPurchases.filter(p => p.sv_events && new Date(p.sv_events.date) <= now);
+  const past = myPurchases.filter(p => p.sv_events && new Date(p.sv_events.date) <= now && !hiddenTicketIds.includes(p.id));
   const list = tab === 'upcoming' ? upcoming : past;
+
+  const handleDelete = () => {
+    if (ticketToDelete) {
+      setHiddenTicketIds(prev => [...prev, ticketToDelete.id]);
+      setTicketToDelete(null);
+    }
+  };
 
   return (
     <div className="absolute inset-0 bg-[#06060F] flex flex-col overflow-hidden">
@@ -57,7 +75,7 @@ export function MyTicketsScreen() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-24 px-5">
+      <div className="flex-1 overflow-y-auto pb-24 px-5 relative">
         {list.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center">
             <QrCode size={32} className="text-gray-600 mb-3" />
@@ -74,31 +92,73 @@ export function MyTicketsScreen() {
               <TicketCard
                 key={purchase.id}
                 purchase={purchase}
+                isPast={tab === 'past'}
                 onPress={() => navigate('ticket-detail', { purchaseId: purchase.id })}
+                onLongPress={() => tab === 'past' && setTicketToDelete(purchase)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {ticketToDelete && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center px-6">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setTicketToDelete(null)} />
+          <div className="relative bg-[#13132A] rounded-3xl p-6 w-full max-w-sm border border-white/10 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mb-4 mx-auto">
+              <Trash2 size={24} className="text-red-500" />
+            </div>
+            <h3 className="text-xl font-bold text-white text-center mb-2">Supprimer le billet ?</h3>
+            <p className="text-gray-400 text-center text-sm mb-6">
+              Voulez-vous vraiment supprimer ce billet de votre historique ? Cette action est irréversible.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setTicketToDelete(null)}
+                className="flex-1 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-colors text-sm"
+              >
+                Annuler
+              </button>
+              <button 
+                onClick={handleDelete}
+                className="flex-1 py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold transition-colors text-sm"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <BottomNav />
     </div>
   );
 }
 
-function TicketCard({ purchase, onPress }: { purchase: Purchase; onPress: () => void }) {
+function TicketCard({ purchase, onPress, onLongPress, isPast }: { purchase: Purchase; onPress: () => void, onLongPress: () => void, isPast: boolean }) {
   const event = purchase.sv_events;
   const ticketType = purchase.sv_ticket_types;
+  
+  const bind = useLongPress(() => {
+    onLongPress();
+  }, {
+    threshold: 500,
+    cancelOnMovement: true
+  });
+
   if (!event) return null;
 
   return (
     <button
+      {...bind()}
       onClick={onPress}
-      className="w-full bg-[#13132A] rounded-2xl overflow-hidden active:opacity-80 transition-opacity"
+      className={`w-full bg-[#13132A] rounded-2xl overflow-hidden active:opacity-80 transition-all select-none ${isPast ? 'opacity-80' : ''}`}
     >
       {/* Image header */}
       <div className="relative h-28">
         <img src={event.image_url || ''} alt={event.title} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-end p-4">
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-end p-4 pointer-events-none">
           <div>
             <h3 className="text-white font-bold text-sm">{event.title}</h3>
             <p className="text-gray-300 text-xs">{event.sv_organizers?.name}</p>
@@ -112,14 +172,14 @@ function TicketCard({ purchase, onPress }: { purchase: Purchase; onPress: () => 
       </div>
 
       {/* Dashed separator */}
-      <div className="flex items-center px-4">
+      <div className="flex items-center px-4 pointer-events-none">
         <div className="w-4 h-4 -ml-6 bg-[#06060F] rounded-full" />
         <div className="flex-1 border-t-2 border-dashed border-white/10" />
         <div className="w-4 h-4 -mr-6 bg-[#06060F] rounded-full" />
       </div>
 
       {/* Details */}
-      <div className="p-4">
+      <div className="p-4 pointer-events-none">
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5">
