@@ -22,6 +22,16 @@ export function LoginScreen() {
     else navigate('home');
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) { setError('Entrez votre email d\'abord puis cliquez "Mot de passe oublié"'); return; }
+    setLoading(true);
+    setError('');
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email);
+    setLoading(false);
+    if (err) setError(err.message);
+    else setError('✅ Email de réinitialisation envoyé ! Vérifiez votre boîte mail.');
+  };
+
   return (
     <div className="absolute inset-0 bg-[#06060F] flex flex-col overflow-hidden">
       <StatusBar />
@@ -70,7 +80,7 @@ export function LoginScreen() {
               </button>
             </div>
             <div className="flex justify-end mt-1.5">
-              <button className="text-xs text-violet-400">Mot de passe oublié ?</button>
+              <button onClick={handleForgotPassword} className="text-xs text-violet-400 hover:text-violet-300 transition-colors">Mot de passe oublié ?</button>
             </div>
           </div>
 

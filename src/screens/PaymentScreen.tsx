@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ChevronLeft, Shield, Smartphone, CreditCard } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
@@ -31,6 +31,7 @@ export function PaymentScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { pay } = useFedaPay();
+  const purchaseSavedRef = useRef(false);
 
   if (!cart) return null;
 
@@ -64,6 +65,8 @@ export function PaymentScreen() {
       customerEmail: user.email,
       customerName: user.user_metadata?.full_name || '',
       onSuccess: async () => {
+        if (purchaseSavedRef.current) return; // Guard: prevent double recording
+        purchaseSavedRef.current = true;
         try {
           await savePurchase(method === 'mobile_money' ? 'Mobile Money' : 'Carte bancaire');
         } catch {
