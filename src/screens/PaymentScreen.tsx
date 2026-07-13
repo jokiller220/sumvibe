@@ -23,6 +23,14 @@ const PAYMENT_METHODS = [
     color: '#2563EB',
     gradient: 'from-blue-600/20 to-cyan-600/20',
   },
+  {
+    id: 'geniuspay',
+    name: 'GeniusPay (Nouveau)',
+    desc: 'Paiement sécurisé via GeniusPay',
+    icon: Smartphone,
+    color: '#10B981',
+    gradient: 'from-emerald-600/20 to-teal-600/20',
+  },
 ];
 
 export function PaymentScreen() {
@@ -54,11 +62,45 @@ export function PaymentScreen() {
     navigate('payment-success');
   };
 
-  const handlePay = () => {
+  const handlePay = async () => {
     if (!user) return;
     setLoading(true);
     setError('');
 
+    if (method === 'geniuspay') {
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke('create-geniuspay-checkout', {
+          body: {
+            amount: total,
+            description: `${cart.eventTitle} — ${cart.ticketTypeName} × ${cart.quantity}`,
+            cart: cart,
+            customerEmail: user.email,
+            customerName: user.user_metadata?.full_name || '',
+          }
+        });
+
+        if (fnError) throw new Error(fnError.message);
+        if (data?.error) throw new Error(data.error);
+        if (data?.checkout_url) {
+          // Sauvegarder les détails pour finaliser après le retour de GeniusPay
+          localStorage.setItem('pending_geniuspay_purchase', JSON.stringify({
+            cart,
+            method: 'GeniusPay'
+          }));
+          
+          // Rediriger vers la page de paiement GeniusPay
+          window.location.href = data.checkout_url;
+        } else {
+          throw new Error("Erreur inattendue : pas d'URL de paiement.");
+        }
+      } catch (err: any) {
+        setError(err.message || 'Erreur lors de la communication avec GeniusPay');
+        setLoading(false);
+      }
+      return;
+    }
+
+    // FedaPay fallback pour les autres méthodes
     pay({
       amount: total,
       description: `${cart.eventTitle} — ${cart.ticketTypeName} × ${cart.quantity}`,

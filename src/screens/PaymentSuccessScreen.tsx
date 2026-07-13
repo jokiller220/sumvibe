@@ -1,18 +1,90 @@
+import { useEffect, useState } from 'react';
 import { CheckCircle, Download, Share2 } from 'lucide-react';
 import QRCodeSVG from 'react-qr-code';
 import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
 import { StatusBar } from '../components/StatusBar';
 import { formatPrice } from '../lib/utils';
 
 export function PaymentSuccessScreen() {
-  const { cart, myPurchases, navigate } = useApp();
+  const { cart, myPurchases, user, navigate, loadMyPurchases, loadEvents } = useApp();
+  const [processing, setProcessing] = useState(true);
+  const [error, setError] = useState('');
+  
+  useEffect(() => {
+    async function processPendingPurchase() {
+      const pendingData = localStorage.getItem('pending_geniuspay_purchase');
+      if (!pendingData) {
+        setProcessing(false);
+        return;
+      }
+      
+      try {
+        const { cart: pendingCart, method } = JSON.parse(pendingData);
+        if (!user || !pendingCart) {
+          throw new Error("Utilisateur ou panier invalide.");
+        }
+
+        const total = Math.round(pendingCart.price * pendingCart.quantity * 1.05);
+
+        const { error: err } = await supabase.from('sv_purchases').insert({
+          user_id: user.id,
+          event_id: pendingCart.eventId,
+          ticket_type_id: pendingCart.ticketTypeId,
+          quantity: pendingCart.quantity,
+          total_amount: total,
+          payment_method: method,
+          status: 'active',
+        });
+        
+        if (err) throw err;
+        
+        // Nettoyer le localStorage
+        localStorage.removeItem('pending_geniuspay_purchase');
+        
+        // Recharger les données
+        await loadMyPurchases();
+        await loadEvents();
+        
+      } catch (err: any) {
+        console.error(err);
+        setError("Erreur lors de l'enregistrement du billet. Veuillez contacter le support avec votre preuve de paiement.");
+      } finally {
+        setProcessing(false);
+      }
+    }
+
+    processPendingPurchase();
+  }, [user, loadMyPurchases, loadEvents]);
+
   const latestPurchase = myPurchases[0];
 
   return (
     <div className="absolute inset-0 bg-[#06060F] flex flex-col overflow-hidden">
       <StatusBar />
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+      {processing ? (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+          <div className="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mb-4" />
+          <h2 className="text-white font-bold">Validation du paiement...</h2>
+          <p className="text-gray-400 text-sm mt-2">Veuillez patienter quelques instants.</p>
+        </div>
+      ) : error ? (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+          <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+            <span className="text-red-500 text-2xl">⚠️</span>
+          </div>
+          <h2 className="text-white font-bold text-xl mb-2">Erreur</h2>
+          <p className="text-red-400 text-sm">{error}</p>
+          <button 
+            onClick={() => navigate('home')}
+            className="mt-8 py-3 px-6 bg-[#13132A] text-white rounded-xl"
+          >
+            Retour à l'accueil
+          </button>
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         {/* Success icon */}
         <div className="relative mb-6">
           <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center">
@@ -78,7 +150,8 @@ export function PaymentSuccessScreen() {
             Partager
           </button>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
