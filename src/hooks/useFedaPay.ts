@@ -1,5 +1,7 @@
-// Hook to dynamically load FedaPay Checkout.js and expose the pay function
 import { useCallback, useEffect, useRef } from 'react';
+
+// FedaPay public key (live)
+const FEDAPAY_PK = import.meta.env.VITE_FEDAPAY_PUBLIC_KEY || 'pk_live_aAUfRsADSFFOgUQFEWoH9sG0';
 
 declare global {
   interface Window {
@@ -74,7 +76,7 @@ export function useFedaPay() {
       const lastname = rest.join(' ') || firstname;
 
       const widget = window.FedaPay.init({
-        public_key: import.meta.env.VITE_FEDAPAY_PUBLIC_KEY,
+        public_key: FEDAPAY_PK,
         environment: 'live',
         transaction: {
           amount: opts.amount,
