@@ -1,32 +1,15 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, Shield, Smartphone, CreditCard } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { StatusBar } from '../components/StatusBar';
 import { formatPrice } from '../lib/utils';
-import { useFedaPay } from '../hooks/useFedaPay';
 
 const PAYMENT_METHODS = [
   {
-    id: 'mobile_money',
-    name: 'Mobile Money',
-    desc: 'Flooz, T-Money, Wave',
-    icon: Smartphone,
-    color: '#7C3AED',
-    gradient: 'from-violet-600/20 to-pink-600/20',
-  },
-  {
-    id: 'card',
-    name: 'Carte bancaire',
-    desc: 'Visa, Mastercard',
-    icon: CreditCard,
-    color: '#2563EB',
-    gradient: 'from-blue-600/20 to-cyan-600/20',
-  },
-  {
     id: 'geniuspay',
-    name: 'GeniusPay (Nouveau)',
-    desc: 'Paiement sécurisé via GeniusPay',
+    name: 'Payer avec GeniusPay',
+    desc: 'Mobile Money (Flooz, T-Money) & Carte Bancaire',
     icon: Smartphone,
     color: '#10B981',
     gradient: 'from-emerald-600/20 to-teal-600/20',
@@ -35,32 +18,14 @@ const PAYMENT_METHODS = [
 
 export function PaymentScreen() {
   const { cart, user, navigate, goBack, loadMyPurchases, loadEvents } = useApp();
-  const [method, setMethod] = useState('mobile_money');
+  const [method, setMethod] = useState('geniuspay');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { pay } = useFedaPay();
-  const purchaseSavedRef = useRef(false);
 
   if (!cart) return null;
 
   const total = Math.round(cart.price * cart.quantity * 1.05);
   const fee = total - cart.price * cart.quantity;
-
-  const savePurchase = async (paymentMethod: string) => {
-    const { error: err } = await supabase.from('sv_purchases').insert({
-      user_id: user!.id,
-      event_id: cart.eventId,
-      ticket_type_id: cart.ticketTypeId,
-      quantity: cart.quantity,
-      total_amount: total,
-      payment_method: paymentMethod,
-      status: 'active',
-    });
-    if (err) throw err;
-    await loadMyPurchases();
-    await loadEvents();
-    navigate('payment-success');
-  };
 
   const handlePay = async () => {
     if (!user) return;
@@ -86,9 +51,9 @@ export function PaymentScreen() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            // Utilisation de la clé fournie comme clé publique
-            'X-API-Key': 'sk_sandbox_yCQhLBBt3pSjgf9jqHr2HAxWMLWn7bIw',
-            'Authorization': 'Bearer sk_sandbox_yCQhLBBt3pSjgf9jqHr2HAxWMLWn7bIw'
+            // Utilisation de la clé publique de production
+            'X-API-Key': 'pk_live_WosUxndiXmm19VlRcjLiVfCa1h24fhbM',
+            'Authorization': 'Bearer pk_live_WosUxndiXmm19VlRcjLiVfCa1h24fhbM'
           },
           body: JSON.stringify(paymentPayload)
         });
@@ -119,32 +84,6 @@ export function PaymentScreen() {
       }
       return;
     }
-
-    // FedaPay fallback pour les autres méthodes
-    pay({
-      amount: total,
-      description: `${cart.eventTitle} — ${cart.ticketTypeName} × ${cart.quantity}`,
-      customerEmail: user.email,
-      customerName: user.user_metadata?.full_name || '',
-      onSuccess: async () => {
-        if (purchaseSavedRef.current) return; // Guard: prevent double recording
-        purchaseSavedRef.current = true;
-        try {
-          await savePurchase(method === 'mobile_money' ? 'Mobile Money' : 'Carte bancaire');
-        } catch {
-          setError('Paiement reçu mais enregistrement échoué. Contactez le support.');
-        } finally {
-          setLoading(false);
-        }
-      },
-      onCancel: () => {
-        setLoading(false);
-      },
-      onError: (msg) => {
-        setError(msg);
-        setLoading(false);
-      },
-    });
   };
 
   return (
