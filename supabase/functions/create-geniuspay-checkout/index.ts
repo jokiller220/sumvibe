@@ -16,12 +16,13 @@ serve(async (req) => {
     const { amount, description, cart, customerEmail, customerName } = await req.json()
 
     // Configuration GeniusPay
-    // Clé secrète configurée via variables d'environnement Supabase
-    // Exemple d'ajout: npx supabase secrets set GENIUSPAY_SECRET_KEY=sk_sandbox_yCQhLBBt3pSjgf9jqHr2HAxWMLWn7bIw
+    // Clé publique configurée via variables d'environnement Supabase (X-API-Key)
+    const GENIUSPAY_PUBLIC_KEY = Deno.env.get('GENIUSPAY_PUBLIC_KEY')
+    // Clé secrète configurée via variables d'environnement Supabase (X-API-Secret)
     const GENIUSPAY_SECRET_KEY = Deno.env.get('GENIUSPAY_SECRET_KEY')
 
-    if (!GENIUSPAY_SECRET_KEY) {
-      throw new Error("Clé secrète GeniusPay manquante dans l'environnement.")
+    if (!GENIUSPAY_PUBLIC_KEY || !GENIUSPAY_SECRET_KEY) {
+      throw new Error("Clé publique ou secrète GeniusPay manquante dans l'environnement.")
     }
 
     // Préparation de la requête vers GeniusPay
@@ -34,18 +35,18 @@ serve(async (req) => {
         name: customerName,
       },
       return_url: `${req.headers.get('origin') || 'http://localhost:5173'}/payment-success`,
-      cancel_url: `${req.headers.get('origin') || 'http://localhost:5173'}/payment-cancel`
+      error_url: `${req.headers.get('origin') || 'http://localhost:5173'}/payment-cancel`
     }
 
     console.log("Calling GeniusPay API with:", paymentPayload)
 
     // Appel à l'API GeniusPay
-    const response = await fetch('https://pay.genius.ci/api/v1/merchant/payments', {
+    const response = await fetch('https://geniuspay.ci/api/v1/merchant/payments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GENIUSPAY_SECRET_KEY}`,
-        'X-API-Secret': GENIUSPAY_SECRET_KEY, // Parfois requis en plus selon la doc
+        'X-API-Key': GENIUSPAY_PUBLIC_KEY,
+        'X-API-Secret': GENIUSPAY_SECRET_KEY,
       },
       body: JSON.stringify(paymentPayload)
     })
