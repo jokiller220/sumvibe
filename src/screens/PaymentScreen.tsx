@@ -149,10 +149,10 @@ export function PaymentScreen() {
           </div>
         </div>
 
-        {/* FedaPay badge */}
-        <div className="flex items-center justify-center gap-2 px-4 py-3 bg-green-500/10 border border-green-500/20 rounded-2xl mb-3">
-          <Shield size={16} className="text-green-400 flex-shrink-0" />
-          <span className="text-green-400 text-xs">Paiement 100% sécurisé via FedaPay</span>
+        {/* GeniusPay badge */}
+        <div className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl mb-3">
+          <Shield size={16} className="text-emerald-400 flex-shrink-0" />
+          <span className="text-emerald-400 text-xs">Paiement 100% sécurisé via GeniusPay</span>
         </div>
 
         {error && (
@@ -178,7 +178,7 @@ export function PaymentScreen() {
             `Payer ${formatPrice(total)}`
           )}
         </button>
-        <p className="text-center text-gray-600 text-xs mt-2">Powered by FedaPay</p>
+        <p className="text-center text-gray-600 text-xs mt-2">Powered by GeniusPay</p>
       </div>
     </div>
   );
