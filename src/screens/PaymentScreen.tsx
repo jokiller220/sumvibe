@@ -1,72 +1,85 @@
 import { useState } from 'react';
-import { ChevronLeft, Shield } from 'lucide-react';
+import { ChevronLeft, Shield, Smartphone, CreditCard } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { StatusBar } from '../components/StatusBar';
 import { formatPrice } from '../lib/utils';
+import { useFedaPay } from '../hooks/useFedaPay';
 
 const PAYMENT_METHODS = [
   {
-    id: 'Flooz',
-    name: 'Flooz',
-    desc: 'Payez avec Flooz',
-    color: '#FF6B35',
-    logo: '🟠',
+    id: 'mobile_money',
+    name: 'Mobile Money',
+    desc: 'Flooz, T-Money, Wave',
+    icon: Smartphone,
+    color: '#7C3AED',
+    gradient: 'from-violet-600/20 to-pink-600/20',
   },
   {
-    id: 'T-Money',
-    name: 'T-Money',
-    desc: 'Payez avec T-Money',
-    color: '#E31E24',
-    logo: '🔴',
-  },
-  {
-    id: 'Wave',
-    name: 'Wave',
-    desc: 'Payez avec Wave',
-    color: '#1DC9F4',
-    logo: '🔵',
+    id: 'card',
+    name: 'Carte bancaire',
+    desc: 'Visa, Mastercard',
+    icon: CreditCard,
+    color: '#2563EB',
+    gradient: 'from-blue-600/20 to-cyan-600/20',
   },
 ];
 
 export function PaymentScreen() {
   const { cart, user, navigate, goBack, loadMyPurchases, loadEvents } = useApp();
-  const [method, setMethod] = useState('Flooz');
+  const [method, setMethod] = useState('mobile_money');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { pay } = useFedaPay();
 
   if (!cart) return null;
 
   const total = Math.round(cart.price * cart.quantity * 1.05);
   const fee = total - cart.price * cart.quantity;
 
-  const handlePay = async () => {
-    if (!user) return;
-    setLoading(true);
-    setError('');
+  const savePurchase = async (paymentMethod: string) => {
     const { error: err } = await supabase.from('sv_purchases').insert({
-      user_id: user.id,
+      user_id: user!.id,
       event_id: cart.eventId,
       ticket_type_id: cart.ticketTypeId,
       quantity: cart.quantity,
       total_amount: total,
-      payment_method: method,
+      payment_method: paymentMethod,
       status: 'active',
     });
-    if (err) {
-      setError('Paiement échoué. Réessayez.');
-      setLoading(false);
-      return;
-    }
-    // Update sold count manually
-    const { data: tt } = await supabase.from('sv_ticket_types').select('sold').eq('id', cart.ticketTypeId).single();
-    if (tt) {
-       await supabase.from('sv_ticket_types').update({ sold: (tt.sold || 0) + cart.quantity }).eq('id', cart.ticketTypeId);
-    }
+    if (err) throw err;
     await loadMyPurchases();
     await loadEvents();
-    setLoading(false);
     navigate('payment-success');
+  };
+
+  const handlePay = () => {
+    if (!user) return;
+    setLoading(true);
+    setError('');
+
+    pay({
+      amount: total,
+      description: `${cart.eventTitle} — ${cart.ticketTypeName} × ${cart.quantity}`,
+      customerEmail: user.email,
+      customerName: user.user_metadata?.full_name || '',
+      onSuccess: async () => {
+        try {
+          await savePurchase(method === 'mobile_money' ? 'Mobile Money' : 'Carte bancaire');
+        } catch {
+          setError('Paiement reçu mais enregistrement échoué. Contactez le support.');
+        } finally {
+          setLoading(false);
+        }
+      },
+      onCancel: () => {
+        setLoading(false);
+      },
+      onError: (msg) => {
+        setError(msg);
+        setLoading(false);
+      },
+    });
   };
 
   return (
@@ -84,31 +97,31 @@ export function PaymentScreen() {
 
         {/* Methods */}
         <div className="flex flex-col gap-3 mb-6">
-          {PAYMENT_METHODS.map(m => (
-            <button
-              key={m.id}
-              onClick={() => setMethod(m.id)}
-              className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
-                method === m.id
-                  ? 'bg-violet-600/10 border-violet-500'
-                  : 'bg-[#13132A] border-transparent'
-              }`}
-            >
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
-                style={{ background: m.color + '20' }}
+          {PAYMENT_METHODS.map(m => {
+            const Icon = m.icon;
+            return (
+              <button
+                key={m.id}
+                onClick={() => setMethod(m.id)}
+                className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
+                  method === m.id
+                    ? 'bg-violet-600/10 border-violet-500'
+                    : 'bg-[#13132A] border-transparent'
+                }`}
               >
-                {m.logo}
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-white font-semibold text-sm">{m.name}</p>
-                <p className="text-gray-500 text-xs">{m.desc}</p>
-              </div>
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${method === m.id ? 'border-violet-500' : 'border-gray-600'}`}>
-                {method === m.id && <div className="w-2.5 h-2.5 bg-violet-500 rounded-full" />}
-              </div>
-            </button>
-          ))}
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${m.gradient}`}>
+                  <Icon size={22} style={{ color: m.color }} />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-white font-semibold text-sm">{m.name}</p>
+                  <p className="text-gray-500 text-xs">{m.desc}</p>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${method === m.id ? 'border-violet-500' : 'border-gray-600'}`}>
+                  {method === m.id && <div className="w-2.5 h-2.5 bg-violet-500 rounded-full" />}
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Order summary */}
@@ -132,10 +145,10 @@ export function PaymentScreen() {
           </div>
         </div>
 
-        {/* Security note */}
-        <div className="flex items-center gap-2 px-4 py-3 bg-green-500/10 border border-green-500/20 rounded-2xl">
+        {/* FedaPay badge */}
+        <div className="flex items-center justify-center gap-2 px-4 py-3 bg-green-500/10 border border-green-500/20 rounded-2xl mb-3">
           <Shield size={16} className="text-green-400 flex-shrink-0" />
-          <span className="text-green-400 text-xs">Paiement 100% sécurisé</span>
+          <span className="text-green-400 text-xs">Paiement 100% sécurisé via FedaPay</span>
         </div>
 
         {error && (
@@ -150,10 +163,18 @@ export function PaymentScreen() {
         <button
           onClick={handlePay}
           disabled={loading}
-          className="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold rounded-2xl text-base disabled:opacity-60 transition-opacity"
+          className="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold rounded-2xl text-base disabled:opacity-60 transition-opacity flex items-center justify-center gap-2"
         >
-          {loading ? 'Traitement...' : `Payer ${formatPrice(total)}`}
+          {loading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Ouverture du paiement...
+            </>
+          ) : (
+            `Payer ${formatPrice(total)}`
+          )}
         </button>
+        <p className="text-center text-gray-600 text-xs mt-2">Powered by FedaPay</p>
       </div>
     </div>
   );
