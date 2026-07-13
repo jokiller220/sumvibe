@@ -69,19 +69,39 @@ export function PaymentScreen() {
 
     if (method === 'geniuspay') {
       try {
-        const { data, error: fnError } = await supabase.functions.invoke('create-geniuspay-checkout', {
-          body: {
-            amount: total,
-            description: `${cart.eventTitle} — ${cart.ticketTypeName} × ${cart.quantity}`,
-            cart: cart,
-            customerEmail: user.email,
-            customerName: user.user_metadata?.full_name || '',
-          }
+        // Appel direct à l'API GeniusPay depuis le frontend
+        const paymentPayload = {
+          amount: total,
+          currency: "XOF",
+          description: `${cart.eventTitle} — ${cart.ticketTypeName} × ${cart.quantity}`,
+          customer: {
+            email: user.email,
+            name: user.user_metadata?.full_name || '',
+          },
+          return_url: `${window.location.origin}/payment-success`,
+          cancel_url: `${window.location.origin}/payment-cancel`
+        };
+
+        const response = await fetch('https://pay.genius.ci/api/v1/merchant/payments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // Utilisation de la clé fournie comme clé publique
+            'X-API-Key': 'sk_sandbox_yCQhLBBt3pSjgf9jqHr2HAxWMLWn7bIw',
+            'Authorization': 'Bearer sk_sandbox_yCQhLBBt3pSjgf9jqHr2HAxWMLWn7bIw'
+          },
+          body: JSON.stringify(paymentPayload)
         });
 
-        if (fnError) throw new Error(fnError.message);
-        if (data?.error) throw new Error(data.error);
-        if (data?.checkout_url) {
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Erreur lors de l'initialisation de GeniusPay");
+        }
+
+        const checkoutUrl = data.checkout_url || (data.data && data.data.checkout_url);
+
+        if (checkoutUrl) {
           // Sauvegarder les détails pour finaliser après le retour de GeniusPay
           localStorage.setItem('pending_geniuspay_purchase', JSON.stringify({
             cart,
@@ -89,7 +109,7 @@ export function PaymentScreen() {
           }));
           
           // Rediriger vers la page de paiement GeniusPay
-          window.location.href = data.checkout_url;
+          window.location.href = checkoutUrl;
         } else {
           throw new Error("Erreur inattendue : pas d'URL de paiement.");
         }
