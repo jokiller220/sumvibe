@@ -25,7 +25,6 @@ serve(async (req) => {
       throw new Error("Clé publique ou secrète GeniusPay manquante dans l'environnement.")
     }
 
-    // Préparation de la requête vers GeniusPay
     const paymentPayload: any = {
       amount: amount,
       currency: "XOF",
@@ -37,13 +36,6 @@ serve(async (req) => {
       },
       return_url: `${req.headers.get('origin') || 'http://localhost:5173'}/payment-success`,
       error_url: `${req.headers.get('origin') || 'http://localhost:5173'}/payment-cancel`
-    }
-
-    // Ajoute le provider si ce n'est pas "card" et qu'un provider spécifique a été choisi
-    if (paymentMethod && paymentMethod !== 'card') {
-      paymentPayload.payment_method = paymentMethod
-    } else if (paymentMethod === 'card') {
-       paymentPayload.payment_method = 'card'
     }
 
     console.log("Calling GeniusPay API with:", paymentPayload)

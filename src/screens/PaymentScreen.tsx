@@ -39,6 +39,7 @@ export function PaymentScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [pendingValidation, setPendingValidation] = useState(false);
+  const [popupOpen, setPopupOpen] = useState(false);
 
   if (!cart) return null;
 
@@ -97,11 +98,47 @@ export function PaymentScreen() {
         method: 'GeniusPay'
       }));
 
-      window.location.href = checkoutUrl;
+      // Ouvrir un popup au lieu de rediriger la page courante
+      setPopupOpen(true);
+      const width = 500;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+      
+      const popup = window.open(
+        checkoutUrl,
+        "GeniusPayCheckout",
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+
+      if (!popup) {
+        throw new Error("Le navigateur a bloqué l'ouverture de la fenêtre de paiement. Veuillez autoriser les popups.");
+      }
+
+      // Écouter le message de succès venant du popup (via PaymentSuccessScreen.tsx)
+      const messageListener = (event: MessageEvent) => {
+        if (event.data === 'geniuspay_success') {
+          window.removeEventListener('message', messageListener);
+          popup.close();
+          navigate('payment-success'); // Naviguer vers la page de succès dans l'app principale
+        }
+      };
+      window.addEventListener('message', messageListener);
+
+      // Vérifier si le popup est fermé par l'utilisateur (annulation)
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', messageListener);
+          setPopupOpen(false);
+          setLoading(false);
+        }
+      }, 500);
 
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la communication avec GeniusPay');
       setLoading(false);
+      setPopupOpen(false);
     }
   };
 
@@ -211,29 +248,28 @@ export function PaymentScreen() {
         </div>
 
         {error && (
-          <div className="mt-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-xs">
-            {error}
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+            <p className="text-red-400 text-sm text-center">{error}</p>
           </div>
         )}
       </div>
 
-      {/* CTA */}
-      <div className="absolute bottom-0 left-0 right-0 bg-[#06060F] border-t border-white/10 px-5 py-4 pb-6">
+      {/* Footer / Pay Button */}
+      <div className="absolute bottom-0 left-0 right-0 p-5 bg-[#06060F]/80 backdrop-blur-xl border-t border-white/5">
         <button
           onClick={handlePay}
-          disabled={loading}
-          className="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold rounded-2xl text-base disabled:opacity-60 transition-opacity flex items-center justify-center gap-2"
+          disabled={loading || pendingValidation || popupOpen}
+          className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-bold py-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center justify-center gap-2"
         >
           {loading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Ouverture du paiement...
-            </>
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : popupOpen ? (
+            'Paiement en cours dans la fenêtre...'
           ) : (
             `Payer ${formatPrice(total)}`
           )}
         </button>
-        <p className="text-center text-gray-600 text-xs mt-2">Powered by GeniusPay</p>
+        <p className="text-center text-xs text-gray-500 mt-3 font-medium">Powered by GeniusPay</p>
       </div>
     </div>
   );

@@ -12,6 +12,13 @@ export function PaymentSuccessScreen() {
   const [error, setError] = useState('');
   
   useEffect(() => {
+    // Si la page s'ouvre dans un popup (le widget GeniusPay)
+    if (window.opener && window.opener !== window) {
+      window.opener.postMessage('geniuspay_success', '*');
+      window.close();
+      return;
+    }
+
     async function processPendingPurchase() {
       const pendingData = localStorage.getItem('pending_geniuspay_purchase');
       if (!pendingData) {
