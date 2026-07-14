@@ -57,6 +57,32 @@ export function PaymentScreen() {
         throw new Error("Veuillez entrer votre numéro de téléphone (sans l'indicatif)");
       }
 
+      // 1. Ouvrir le popup de manière SYNCHRONE avant l'appel API
+      // Cela empêche les navigateurs (Chrome, Safari) de bloquer le popup
+      const width = 500;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+      
+      const popup = window.open(
+        "about:blank",
+        "GeniusPayCheckout",
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+
+      if (!popup) {
+        throw new Error("Votre navigateur a bloqué la fenêtre de paiement. Veuillez autoriser les popups pour ce site.");
+      }
+
+      // Afficher un message d'attente dans le popup
+      popup.document.write(`
+        <div style="font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f9f9f9;">
+          <h2>Connexion sécurisée en cours...</h2>
+          <p>Veuillez patienter.</p>
+        </div>
+      `);
+
+      setPopupOpen(true);
       const fullPhone = phone ? `${countryCode}${phone.replace(/^0+/, '')}` : undefined;
 
       const { data, error: functionError } = await supabase.functions.invoke('create-geniuspay-checkout', {
@@ -71,28 +97,19 @@ export function PaymentScreen() {
       });
 
       if (functionError) {
+        popup.close();
         throw new Error(functionError.message || "Erreur de communication avec le serveur de paiement");
       }
 
       if (data && data.error) {
+        popup.close();
         throw new Error(data.message || "Erreur retournée par GeniusPay");
-      }
-
-      if (data && data.status === 'pending' && method === 'pawapay') {
-        // Paiement initié sur le téléphone de l'utilisateur
-        setPendingValidation(true);
-        // Sauvegarder pour vérifier plus tard
-        localStorage.setItem('pending_geniuspay_purchase', JSON.stringify({
-          cart,
-          method: 'GeniusPay Native',
-          reference: data.reference
-        }));
-        return;
       }
 
       const checkoutUrl = data?.checkout_url || data?.payment_url;
 
       if (!checkoutUrl) {
+        popup.close();
         throw new Error("L'API n'a pas retourné de lien de paiement.");
       }
 
@@ -101,24 +118,10 @@ export function PaymentScreen() {
         method: 'GeniusPay'
       }));
 
-      // Ouvrir un popup au lieu de rediriger la page courante
-      setPopupOpen(true);
-      const width = 500;
-      const height = 700;
-      const left = window.screen.width / 2 - width / 2;
-      const top = window.screen.height / 2 - height / 2;
-      
-      const popup = window.open(
-        checkoutUrl,
-        "GeniusPayCheckout",
-        `width=${width},height=${height},left=${left},top=${top}`
-      );
+      // 2. Rediriger le popup vers l'URL GeniusPay
+      popup.location.href = checkoutUrl;
 
-      if (!popup) {
-        throw new Error("Le navigateur a bloqué l'ouverture de la fenêtre de paiement. Veuillez autoriser les popups.");
-      }
-
-      // Vérifier le statut du popup en continu
+      // 3. Vérifier le statut du popup en continu
       const checkClosed = setInterval(() => {
         try {
           if (popup.closed) {
@@ -128,8 +131,6 @@ export function PaymentScreen() {
             return;
           }
           
-          // On essaie de lire l'URL du popup
-          // Tant qu'il est sur geniuspay.ci, ça jettera une erreur (CORS) que l'on ignore
           const popupUrl = popup.location.href;
           
           if (popupUrl.includes('/payment-success')) {
