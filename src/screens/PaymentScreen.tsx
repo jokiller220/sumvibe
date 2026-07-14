@@ -70,6 +70,10 @@ export function PaymentScreen() {
         throw new Error(functionError.message || "Erreur de communication avec le serveur de paiement");
       }
 
+      if (data && data.error) {
+        throw new Error(data.message || "Erreur retournée par GeniusPay");
+      }
+
       if (data && data.status === 'pending' && method === 'pawapay') {
         // Paiement initié sur le téléphone de l'utilisateur
         setPendingValidation(true);

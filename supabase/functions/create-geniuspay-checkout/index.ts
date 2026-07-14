@@ -53,6 +53,7 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'X-API-Key': GENIUSPAY_PUBLIC_KEY,
         'X-API-Secret': GENIUSPAY_SECRET_KEY,
       },
@@ -63,7 +64,20 @@ serve(async (req) => {
 
     if (!response.ok) {
       console.error("GeniusPay API Error:", data)
-      throw new Error(data.message || "Erreur lors de la création du paiement GeniusPay")
+      // Extract specific validation errors if any
+      let errorMessage = data.message || "Erreur lors de la création du paiement GeniusPay"
+      if (data.error && data.error.errors) {
+        const firstErrorKey = Object.keys(data.error.errors)[0]
+        errorMessage = data.error.errors[firstErrorKey][0] || errorMessage
+      }
+      
+      return new Response(
+        JSON.stringify({ error: true, message: errorMessage }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 // Return 200 so Supabase JS client doesn't swallow the JSON error
+        }
+      )
     }
 
     // L'API peut retourner un checkout_url, un payment_url (pour Wave/Paystack), ou juste un status pending pour Mobile Money USSD
