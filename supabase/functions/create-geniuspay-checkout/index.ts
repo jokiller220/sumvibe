@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, description, cart, customerEmail, customerName } = await req.json()
+    const { amount, description, cart, customerEmail, customerName, paymentMethod, customerPhone } = await req.json()
 
     // Configuration GeniusPay
     // Clé publique configurée via variables d'environnement Supabase (X-API-Key)
@@ -26,16 +26,24 @@ serve(async (req) => {
     }
 
     // Préparation de la requête vers GeniusPay
-    const paymentPayload = {
+    const paymentPayload: any = {
       amount: amount,
       currency: "XOF",
       description: description,
       customer: {
         email: customerEmail,
         name: customerName,
+        phone: customerPhone || undefined, // format +228... ou +225...
       },
       return_url: `${req.headers.get('origin') || 'http://localhost:5173'}/payment-success`,
       error_url: `${req.headers.get('origin') || 'http://localhost:5173'}/payment-cancel`
+    }
+
+    // Ajoute le provider si ce n'est pas "card" et qu'un provider spécifique a été choisi
+    if (paymentMethod && paymentMethod !== 'card') {
+      paymentPayload.payment_method = paymentMethod
+    } else if (paymentMethod === 'card') {
+       paymentPayload.payment_method = 'card'
     }
 
     console.log("Calling GeniusPay API with:", paymentPayload)
@@ -58,16 +66,11 @@ serve(async (req) => {
       throw new Error(data.message || "Erreur lors de la création du paiement GeniusPay")
     }
 
-    // L'API devrait retourner un checkout_url
-    // Si la structure est { data: { checkout_url: "..." } } ou { checkout_url: "..." }
-    const checkoutUrl = data.checkout_url || (data.data && data.data.checkout_url)
-
-    if (!checkoutUrl) {
-      throw new Error("Aucune URL de redirection retournée par GeniusPay")
-    }
+    // L'API peut retourner un checkout_url, un payment_url (pour Wave/Paystack), ou juste un status pending pour Mobile Money USSD
+    const responseData = data.data || data;
 
     return new Response(
-      JSON.stringify({ checkout_url: checkoutUrl }),
+      JSON.stringify(responseData),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
