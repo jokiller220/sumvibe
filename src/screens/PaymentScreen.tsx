@@ -115,23 +115,35 @@ export function PaymentScreen() {
         throw new Error("Le navigateur a bloqué l'ouverture de la fenêtre de paiement. Veuillez autoriser les popups.");
       }
 
-      // Écouter le message de succès venant du popup (via PaymentSuccessScreen.tsx)
-      const messageListener = (event: MessageEvent) => {
-        if (event.data === 'geniuspay_success') {
-          window.removeEventListener('message', messageListener);
-          popup.close();
-          navigate('payment-success'); // Naviguer vers la page de succès dans l'app principale
-        }
-      };
-      window.addEventListener('message', messageListener);
-
-      // Vérifier si le popup est fermé par l'utilisateur (annulation)
+      // Vérifier le statut du popup en continu
       const checkClosed = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(checkClosed);
-          window.removeEventListener('message', messageListener);
-          setPopupOpen(false);
-          setLoading(false);
+        try {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            setPopupOpen(false);
+            setLoading(false);
+            return;
+          }
+          
+          // On essaie de lire l'URL du popup
+          // Tant qu'il est sur geniuspay.ci, ça jettera une erreur (CORS) que l'on ignore
+          const popupUrl = popup.location.href;
+          
+          if (popupUrl.includes('/payment-success')) {
+            clearInterval(checkClosed);
+            popup.close();
+            setPopupOpen(false);
+            setLoading(false);
+            navigate('payment-success');
+          } else if (popupUrl.includes('/payment-cancel')) {
+            clearInterval(checkClosed);
+            popup.close();
+            setPopupOpen(false);
+            setLoading(false);
+            setError('Paiement annulé, échoué ou délai dépassé.');
+          }
+        } catch (e) {
+          // Ignorer les erreurs "cross-origin" normales
         }
       }, 500);
 
