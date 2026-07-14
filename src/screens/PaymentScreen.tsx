@@ -229,28 +229,6 @@ export function PaymentScreen() {
           </div>
         )}
 
-        {pendingValidation && (
-          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center animate-fade-in">
-            <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Smartphone className="text-emerald-400" size={24} />
-            </div>
-            <h3 className="text-white font-bold mb-1">Validez sur votre téléphone</h3>
-            <p className="text-gray-400 text-sm mb-4">
-              Un message vous a été envoyé. Veuillez taper votre code secret pour valider le paiement.
-            </p>
-            <button 
-              onClick={() => {
-                // Pour simplifier on redirige vers success après validation manuelle
-                // En prod, il faut vérifier le statut réel via l'API GeniusPay
-                window.location.href = `${window.location.origin}/payment-success`;
-              }}
-              className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-medium text-sm"
-            >
-              J'ai validé le paiement
-            </button>
-          </div>
-        )}
-
         {/* Order summary */}
         <div className="bg-[#13132A] rounded-2xl p-4 mb-4">
           <h3 className="text-white font-bold mb-3">Résumé de la commande</h3>
