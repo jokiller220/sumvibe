@@ -35,6 +35,7 @@ const PAYMENT_METHODS = [
 export function PaymentScreen() {
   const { cart, user, navigate, goBack, loadMyPurchases, loadEvents } = useApp();
   const [method, setMethod] = useState('pawapay');
+  const [countryCode, setCountryCode] = useState('+228');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -53,8 +54,10 @@ export function PaymentScreen() {
 
     try {
       if ((method === 'pawapay' || method === 'wave') && !phone) {
-        throw new Error("Veuillez entrer votre numéro de téléphone (ex: +228...)");
+        throw new Error("Veuillez entrer votre numéro de téléphone (sans l'indicatif)");
       }
+
+      const fullPhone = phone ? `${countryCode}${phone.replace(/^0+/, '')}` : undefined;
 
       const { data, error: functionError } = await supabase.functions.invoke('create-geniuspay-checkout', {
         body: {
@@ -63,7 +66,7 @@ export function PaymentScreen() {
           customerEmail: user.email,
           customerName: user.user_metadata?.full_name || '',
           paymentMethod: method,
-          customerPhone: phone || undefined
+          customerPhone: fullPhone
         }
       });
 
@@ -199,14 +202,29 @@ export function PaymentScreen() {
         {(method === 'pawapay' || method === 'wave') && (
           <div className="mb-6 animate-fade-in">
             <label className="text-white text-sm font-semibold mb-2 block">Numéro de téléphone</label>
-            <input
-              type="tel"
-              placeholder="+228 XX XX XX XX"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-[#13132A] text-white p-4 rounded-xl border border-gray-800 focus:border-violet-500 outline-none transition-all"
-            />
-            <p className="text-xs text-gray-500 mt-2">N'oubliez pas l'indicatif de votre pays (ex: +228, +225...)</p>
+            <div className="flex gap-2">
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="bg-[#13132A] text-white p-4 rounded-xl border border-gray-800 focus:border-violet-500 outline-none w-28 transition-all"
+              >
+                <option value="+228">🇹🇬 +228</option>
+                <option value="+225">🇨🇮 +225</option>
+                <option value="+221">🇸🇳 +221</option>
+                <option value="+229">🇧🇯 +229</option>
+                <option value="+226">🇧🇫 +226</option>
+                <option value="+223">🇲🇱 +223</option>
+                <option value="+237">🇨🇲 +237</option>
+              </select>
+              <input
+                type="tel"
+                placeholder="XX XX XX XX"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/[^0-9\s]/g, ''))}
+                className="flex-1 bg-[#13132A] text-white p-4 rounded-xl border border-gray-800 focus:border-violet-500 outline-none transition-all"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-2">Saisissez votre numéro sans le 0 au début</p>
           </div>
         )}
 
